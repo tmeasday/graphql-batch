@@ -28,7 +28,10 @@ module GraphQL::Batch
     end
 
     def wait(promise)
-      tick while promise.pending? && !loaders.empty?
+      Parallel.each(loaders.values, in_threads: 4) do |loader|
+        loader.resolve
+      end
+
       if promise.pending?
         promise.reject(BrokenPromiseError.new("Promise wasn't fulfilled after all queries were loaded"))
       end
